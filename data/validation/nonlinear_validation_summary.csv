@@ -1,0 +1,8 @@
+Measure,r_with_rho_mean,r_with_rho_sd,Interpretation
+Spectral Entropy,0.2781166778258008,0.14118699731765988,Frequency-domain complexity
+Sample Entropy,0.15895863791346707,0.14794175150816496,Time-domain regularity
+Permutation Entropy,0.4896434327503822,0.16622668855727166,Ordinal pattern complexity
+rho (VAR rotational) vs z,-0.338697097956069,0.13343056926066887,DV gradient
+Spectral Entropy vs z,0.0803380379811987,0.2957100059248738,DV gradient
+Sample Entropy vs z,0.1799445013749832,0.28210837684894874,DV gradient
+Permutation Entropy vs z,-0.5736569096603541,0.14924499401973992,DV gradient

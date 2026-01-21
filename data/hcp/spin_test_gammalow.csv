@@ -1,0 +1,2 @@
+band,metric,n_parcels,r_observed,p_parametric,p_spin_twotail,p_spin_onetail,null_mean,null_std,n_permutations
+gammalow,rho,103,-0.3991466423750239,2.9614165462766557e-05,0.1154,0.0562,-0.008580272367535209,0.2514007562544244,5000
