@@ -10,6 +10,7 @@ mne-bids>=0.10
 
 # Visualization
 matplotlib>=3.5.0
+tqdm>=4.62.0
 
 # Spatial statistics (optional, for spin tests)
 brainspace>=0.1.0

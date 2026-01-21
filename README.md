@@ -1,239 +1,167 @@
-# MEG Axes Pipeline
+# A Dorsoventral Gradient of Rotational Dynamics in Human Cortex
 
-Subject-specific MEG source reconstruction with Schaefer-400 parcellation, computing parcel-wise temporal dynamics metrics (tau, rho) and group-level spatial statistics.
+Code and data for reproducing analyses from:
 
-## Overview
+**Salardini A., et al. "A dorsoventral gradient of rotational dynamics in human cortex."** *(in preparation)*
 
-This pipeline processes BIDS-formatted CTF MEG resting-state data through:
+## Key Findings
 
-0. **Data extraction** - Extract tar.gz archives to BIDS structure
-1. **FreeSurfer reconstruction** - Cortical surface reconstruction from T1w MRI
-2. **BEM creation** - Boundary element model for forward modeling
-3. **Coregistration** - MEG-MRI alignment via MNE coreg GUI
-4. **Source reconstruction** - dSPM inverse with Schaefer-400 parcellation
-5. **Group statistics** - Spatial correlations with spin-test inference
+1. **Rho-DV Gradient**: Rotational dynamics (rho) vary systematically along the dorsal-ventral axis, with ventral regions showing stronger rotational (oscillatory) activity patterns
+2. **Band Specificity**: The gradient is strongest in high-frequency bands (beta_high: r = -0.77, gamma_low: r = -0.73)
+3. **Task Generalization**: The gradient replicates across resting-state (N=208), visual task (N=69), and auditory task (N=95) conditions
+4. **Beyond Spectral Confounds**: ~32% of the gradient persists after controlling for all spectral features
 
-## Directory Structure
+## Repository Structure
 
 ```
-/mnt/work/
-├── bids/
-│   └── MEG_MOUS/              # BIDS MEG dataset
-│       └── sub-AXXXX/
-│           └── meg/
-│               └── sub-AXXXX_task-rest_meg.ds
-├── derivatives/
-│   ├── freesurfer/            # FreeSurfer SUBJECTS_DIR
-│   │   └── sub-AXXXX/
-│   ├── bem/
-│   │   └── sub-AXXXX/
-│   │       ├── bem-sol.fif
-│   │       └── DONE
-│   ├── coreg/
-│   │   └── sub-AXXXX/
-│   │       ├── trans.fif
-│   │       └── coreg_screenshot.png
-│   ├── axes/
-│   │   └── sub-AXXXX/
-│   │       ├── parcel_ts.npy
-│   │       ├── parcel_metrics.csv
-│   │       └── DONE
-│   ├── group/
-│   │   ├── parcel_group_maps.csv
-│   │   ├── map_stats.csv
-│   │   └── figures/
-│   └── logs/
-│       └── reconall/
-│           └── sub-AXXXX.log
+Dorso-Ventral-Gradient/
+├── data/                          # Processed group-level data
+│   ├── parcel_group_maps.csv      # Main results: rho, tau per parcel (N=208)
+│   ├── mous_band_rho_correlations.csv  # Band-specific rho-DV correlations
+│   ├── mous_spectral_confounds.csv     # Spectral confound control results
+│   ├── mous_task_stats.csv        # Task replication statistics
+│   ├── correlation_stats.csv      # Spatial correlation statistics
+│   └── figures/                   # Publication figures
+├── analysis/                      # Paper-specific analysis scripts
+│   ├── 01_band_specific_analysis.py    # Frequency band decomposition
+│   ├── 02_spectral_confounds.py        # Spectral confound control
+│   ├── 03_task_replication.py          # Visual/auditory task analysis
+│   ├── 04_create_figures.py            # Figure generation
+│   └── 05_hcp_yeo17_analysis.py        # HCP dataset replication
+├── scripts/                       # MEG processing pipeline
+│   ├── 00_extract_tarballs.py     # Data extraction
+│   ├── 01_reconall.sh             # FreeSurfer reconstruction
+│   ├── 02_make_bem.py             # BEM forward model
+│   ├── 03_make_trans.md           # Coregistration instructions
+│   ├── 04_extract_parcels_and_metrics.py  # Source reconstruction + metrics
+│   ├── 05_group_stats.py          # Group statistics + spin tests
+│   └── run_batch.py               # Batch processing
+├── meg_axes/                      # Core library
+│   ├── config.py                  # Configuration system
+│   ├── metrics.py                 # Tau and rho computation
+│   ├── preprocessing.py           # Signal preprocessing
+│   ├── source.py                  # Source reconstruction
+│   └── utils.py                   # Utilities
+├── atlas/                         # Parcellation files
+│   └── schaefer400_centroids.csv  # Schaefer 400 parcel coordinates
+├── config.yaml                    # Main configuration
+├── METHODS.md                     # Methods text
+└── requirements.txt               # Dependencies
 ```
 
-## Environment Setup
+## Main Results
+
+### Rho-DV Gradient (Resting State, N=208)
+
+| Band | Correlation (r) | p (spin) |
+|------|----------------|----------|
+| beta_high | -0.774 | < 0.001 |
+| gamma_low | -0.733 | < 0.001 |
+| broadband | -0.735 | < 0.001 |
+| alpha | -0.649 | < 0.001 |
+| delta | +0.550 | < 0.001 |
+| theta | +0.466 | < 0.001 |
+
+### Task Replication
+
+| Condition | rho-DV (r) | tau-rho residualized (r) |
+|-----------|-----------|-------------------------|
+| Rest (N=208) | -0.72 | -0.65 |
+| Visual (N=69) | -0.68 | -0.67 |
+| Auditory (N=95) | -0.74 | -0.65 |
+
+### Spectral Confound Control
+
+| Model | r | Retention |
+|-------|---|-----------|
+| Raw rho vs z | -0.72 | 100% |
+| rho | gamma_rel | -0.43 | 60% |
+| rho | all spectral + RMS | -0.23 | 32% |
+
+## Installation
 
 ```bash
-# Activate conda environment
+# Clone repository
+git clone https://github.com/Salardini/Dorso-Ventral-Gradient.git
+cd Dorso-Ventral-Gradient
+
+# Create environment
+conda create -n meg python=3.10
 conda activate meg
 
-# Set FreeSurfer
-export SUBJECTS_DIR=/mnt/work/derivatives/freesurfer
-
-# Verify installations
-python -c "import mne; print(mne.__version__)"
-freesurfer --version
+# Install dependencies
+pip install -r requirements.txt
+pip install -e .
 ```
 
-## Workflow
+## Data
 
-### Stage 0: Extract Tarballs
+The MOUS MEG dataset is available from the Donders Repository:
+- https://data.donders.ru.nl/collections/di/dccn/DSC_3011020.09_236
 
-The raw data arrives as tar.gz archives (e.g., `sub-A2002.tar.gz`). Extract to BIDS structure before processing.
-
-```bash
-# Extract MEG data
-python scripts/00_extract_tarballs.py \
-    --src /mnt/data/MEG_MOUS \
-    --dest /mnt/work/bids/MEG_MOUS
-
-# Extract anatomy data
-python scripts/00_extract_tarballs.py \
-    --src /mnt/data/anat \
-    --dest /mnt/work/bids/anat
-
-# Extract specific subjects only
-python scripts/00_extract_tarballs.py \
-    --src /mnt/data/MEG_MOUS \
-    --dest /mnt/work/bids/MEG_MOUS \
-    --subjects A2002,A2003,A2004
-```
-
-**Input:** `sub-XXXX.tar.gz` archives
-**Output:** Extracted BIDS directories + `.extracted` marker
-
-### Stage 1: FreeSurfer Reconstruction
-
-Runs `recon-all` on T1w anatomical images.
-
-```bash
-# Single subject
-./scripts/01_reconall.sh sub-A2002
-```
-
-**Input:** `/mnt/work/bids/<anat_dataset>/sub-XXX/anat/sub-XXX_T1w.nii`
-**Output:** `$SUBJECTS_DIR/sub-XXX/` + `DONE` marker
-**Time:** ~6-12 hours per subject
-
-### Stage 2: BEM Solution
-
-Creates single-shell BEM for MEG forward modeling.
-
-```bash
-# Single subject
-python scripts/02_make_bem.py sub-A2002
-
-# Batch
-python scripts/run_batch.py --stage 2
-```
-
-**Input:** FreeSurfer reconstruction
-**Output:** `/mnt/work/derivatives/bem/sub-XXX/bem-sol.fif` + `DONE` marker
-**Time:** ~5 minutes per subject
-
-### Stage 3: Coregistration (Manual)
-
-Interactive MEG-MRI alignment using MNE coreg GUI.
-
-See `scripts/03_make_trans.md` for detailed instructions.
-
-```bash
-# Launch coreg GUI
-mne coreg --subject sub-A2002 --subjects-dir $SUBJECTS_DIR
-```
-
-**Output:** `/mnt/work/derivatives/coreg/sub-XXX/trans.fif`
-**Time:** ~5-10 minutes per subject (manual)
-
-### Stage 4: Source Reconstruction & Metrics
-
-Main analysis: inverse solution, parcellation, tau/rho computation.
-
-```bash
-# Single subject
-python scripts/04_extract_parcels_and_metrics.py sub-A2002
-
-# Batch
-python scripts/run_batch.py --stage 4
-```
-
-**Outputs:**
-- `/mnt/work/derivatives/axes/sub-XXX/parcel_ts.npy` - Parcel time series (400 x T)
-- `/mnt/work/derivatives/axes/sub-XXX/parcel_metrics.csv` - Tau, rho per parcel
-- `DONE` marker
-
-**Time:** ~10-30 minutes per subject
-
-### Stage 5: Group Statistics
-
-Aggregates subjects and computes spatial statistics.
-
-```bash
-python scripts/05_group_stats.py
-```
-
-**Outputs:**
-- `/mnt/work/derivatives/group/parcel_group_maps.csv` - Mean/median tau, rho
-- `/mnt/work/derivatives/group/map_stats.csv` - AP/DV/ML correlations, spin p-values
-- Figures in `/mnt/work/derivatives/group/figures/`
+Processed group-level data for reproducing figures is included in `data/`.
 
 ## Metrics
 
-### Tau (Intrinsic Timescale)
-
-Autocorrelation function (ACF) integral timescale:
-
-```
-tau = integral from lag_min to lag_max of ACF(lag) d(lag)
-```
-
-Measures how slowly neural activity decorrelates - higher tau indicates longer temporal integration windows.
-
 ### Rho (Rotational Index)
-
-Delay-embedded VAR(1) rotational dynamics index:
-
-1. Embed parcel time series in delay coordinates
+Computed from delay-embedded VAR(1) dynamics:
+1. Embed parcel time series in delay coordinates (d=10, lag=5 samples)
 2. Fit VAR(1) model: x(t+1) = A @ x(t)
-3. Compute eigenvalues of A
-4. Rho = mean imaginary/real ratio of complex eigenvalue pairs
+3. Compute eigenvalues of transition matrix A
+4. Rho = mean |Im(lambda)/Re(lambda)| for complex eigenvalue pairs
 
-Measures rotational vs. decaying dynamics - higher rho indicates more oscillatory activity patterns.
+Higher rho indicates more rotational (oscillatory) dynamics.
 
-## Configuration
+### Tau (Intrinsic Timescale)
+Autocorrelation integral from 5-300ms lag:
+```
+tau = integral(ACF(lag), lag_min=5ms, lag_max=300ms)
+```
 
-Edit `config.yaml` to modify:
+Higher tau indicates longer temporal integration windows.
 
-- Preprocessing: bandpass, notch frequencies, resampling
-- Source reconstruction: spacing, SNR, method
-- Parcellation: Schaefer parameters
-- Tau/rho computation parameters
-- Group statistics: spin test permutations
+## Reproducing Analyses
 
-## Resumability
+### Band-Specific Analysis
+```bash
+python analysis/01_band_specific_analysis.py
+```
+Computes rho in 7 frequency bands (delta through gamma) and tests DV correlations.
 
-All stages use `DONE` markers for idempotent execution:
+### Spectral Confound Control
+```bash
+python analysis/02_spectral_confounds.py
+```
+Tests whether rho-DV gradient persists after removing spectral features.
 
-- `run_batch.py` automatically skips completed subjects
-- Re-running a failed stage continues from last checkpoint
-- Delete `DONE` marker to force re-processing
+### Task Replication
+```bash
+python analysis/03_task_replication.py
+```
+Replicates gradient in visual and auditory task conditions.
 
-## Quality Control
+### Generate Figures
+```bash
+python analysis/04_create_figures.py
+```
 
-Each stage produces QC outputs:
+## Citation
 
-1. **recon-all:** Check `recon-all.log` for errors
-2. **BEM:** Visual inspection of BEM surfaces
-3. **Coreg:** Screenshot saved with trans.fif
-4. **Metrics:** `parcel_metrics.csv` includes QC fields (variance, n_samples)
-5. **Group:** Summary statistics and outlier flags
+```bibtex
+@article{salardini2025dorsoventral,
+  title={A dorsoventral gradient of rotational dynamics in human cortex},
+  author={Salardini, A. and others},
+  journal={in preparation},
+  year={2025}
+}
+```
 
-## Troubleshooting
+## License
 
-**FreeSurfer fails:**
-- Check log in `/mnt/work/derivatives/logs/reconall/sub-XXX.log`
-- Common issues: poor T1 quality, incorrect orientation
-
-**BEM fails:**
-- Usually indicates FreeSurfer watershed issues
-- Try: `mne watershed_bem --subject sub-XXX --overwrite`
-
-**Coreg issues:**
-- Ensure fiducials are correctly placed
-- Use ICP refinement in coreg GUI
-
-**Memory errors in Stage 4:**
-- Reduce `resample_freq` in config
-- Process fewer parcels at once
+MIT License - see LICENSE file.
 
 ## References
 
-- Schaefer et al. (2018) - Schaefer parcellation
-- Honey et al. (2012) - Intrinsic timescales
-- MNE-Python documentation: https://mne.tools
+- Schaefer et al. (2018) - Local-global parcellation of the human cerebral cortex
+- Honey et al. (2012) - Slow cortical dynamics and the accumulation of information
+- MNE-Python: https://mne.tools
