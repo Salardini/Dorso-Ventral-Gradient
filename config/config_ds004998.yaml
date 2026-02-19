@@ -1,0 +1,83 @@
+# =============================================================================
+# MEG Axes Pipeline - Configuration for ds004998 (Parkinson's DBS MEG)
+# =============================================================================
+# Using HoldL task with first 5 minutes (rest period before movement)
+
+meg_dataset: ds004998
+
+paths:
+  bids_root: /mnt/work/bids
+  derivatives: /mnt/work/derivatives
+  subjects_dir: /home/arash_salardini_gmail_com/mne_data/MNE-fsaverage-data
+  logs_dir: /mnt/work/derivatives/logs
+
+preprocessing:
+  task: HoldL
+  session: PeriOp
+  acquisition: MedOff
+  run: auto
+  
+  # Only use first 5 minutes (rest period before movement starts)
+  max_dur_s: 300.0
+  
+  # European 50Hz line noise
+  notch_freqs: [50.0, 100.0, 150.0]
+  l_freq: 1.0
+  h_freq: 40.0
+  resample_fs: 200.0
+  
+  ica_enabled: false
+  ica_n_components: 20
+  ica_method: fastica
+  ica_max_iter: 500
+
+source:
+  template: fsaverage
+  spacing: oct6
+  method: dSPM
+  snr: 3.0
+  loose: 0.2
+  depth: 0.8
+  conductivity: [0.3]
+
+parcellation:
+  atlas: schaefer
+  n_parcels: 402
+  n_networks: 7
+  resolution_mm: 1
+  extract_mode: pca_flip
+  alt_n_parcels: 200
+
+tau:
+  lag_min_s: 0.005
+  lag_max_s: 0.300
+  primary_method: integral
+  exp_fit_max_lag_s: 0.300
+
+rho:
+  embed_dim: 10
+  embed_delay: 1
+  ridge_alpha: 0.001
+  mag_min: 0.01
+  n_pairs: 1
+
+group_stats:
+  n_permutations: 1000
+  corr_method: spearman
+  spin_fallback_to_perm: true
+  axes_mapping:
+    ML: x
+    AP: y
+    DV: z
+
+batch:
+  max_reconall_jobs: 2
+  max_bem_jobs: 4
+  max_extract_jobs: 4
+  skip_existing: true
+  fail_fast: false
+
+qc:
+  save_plots: true
+  plot_format: png
+  plot_dpi: 150

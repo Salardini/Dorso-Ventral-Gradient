@@ -1,0 +1,177 @@
+# =============================================================================
+# MEG Axes Pipeline - Configuration
+# =============================================================================
+# Single source of truth for all pipeline parameters.
+# All scripts accept --config config.yaml and allow CLI overrides.
+#
+# Usage:
+#   python scripts/04_extract_parcels_and_metrics.py --config config.yaml
+#   python scripts/04_extract_parcels_and_metrics.py --config config.yaml --resample 300
+# =============================================================================
+
+# MEG dataset name (subfolder under paths.bids_root)
+meg_dataset: MEG_MOUS
+
+# =============================================================================
+# Paths
+# =============================================================================
+# IMPORTANT: All paths should point to LOCAL disk, never Google Drive mounts.
+# Data should be staged to /mnt/work/ before processing.
+
+paths:
+  bids_root: /mnt/work/bids
+  derivatives: /mnt/work/derivatives
+  subjects_dir: /mnt/work/derivatives/freesurfer
+  logs_dir: /mnt/work/derivatives/logs
+
+# =============================================================================
+# Preprocessing
+# =============================================================================
+
+preprocessing:
+  task: rest
+  run: auto  # auto | none | explicit (e.g., "01")
+
+  # Notch filter for line noise (Hz)
+  notch_freqs: [60.0, 120.0, 180.0]
+
+  # Bandpass filter (Hz)
+  l_freq: 1.0
+  h_freq: 40.0
+
+  # Target sampling frequency (Hz)
+  resample_fs: 200.0
+
+  # Maximum duration to process (seconds, null = full recording)
+  max_dur_s: null
+
+  # ICA artifact removal (OPTIONAL - off by default)
+  ica_enabled: false
+  ica_n_components: 20
+  ica_method: fastica  # fastica | infomax | picard
+  ica_max_iter: 500
+
+# =============================================================================
+# Source Reconstruction
+# =============================================================================
+
+source:
+  # Source space resolution
+  # oct5 (~5mm), oct6 (~4mm), ico4, ico5
+  # Template mode: use fsaverage for all subjects (no FreeSurfer required)
+  template: fsaverage
+
+  spacing: oct6
+
+  # Inverse method: MNE | dSPM | sLORETA | eLORETA
+  method: dSPM
+
+  # SNR assumption for regularization
+  snr: 3.0
+
+  # Orientation constraints
+  # loose: 0=fixed, 1=free (0.2 recommended for MEG)
+  loose: 0.2
+
+  # Depth weighting (0.8 recommended)
+  depth: 0.8
+
+  # BEM conductivity (single-shell for MEG)
+  conductivity: [0.3]
+
+# =============================================================================
+# Parcellation
+# =============================================================================
+# Schaefer atlas in fsaverage space.
+# Centroids computed ONCE in fsaverage and stored in atlas/schaefer400_centroids.csv
+
+parcellation:
+  atlas: schaefer
+  n_parcels: 400
+  n_networks: 7
+  resolution_mm: 1
+  extract_mode: pca_flip
+
+  # Alternative parcellation for robustness check
+  alt_n_parcels: 200
+
+# =============================================================================
+# Tau (Intrinsic Timescale)
+# =============================================================================
+
+tau:
+  # ACF integration window (seconds)
+  lag_min_s: 0.005
+  lag_max_s: 0.300
+
+  # Primary estimator: integral | exponential
+  primary_method: integral
+
+  # Exponential fit settings (secondary estimator)
+  exp_fit_max_lag_s: 0.300
+
+# =============================================================================
+# Rho (Rotational Index)
+# =============================================================================
+
+rho:
+  # Delay embedding parameters
+  embed_dim: 10
+  embed_delay: 1
+
+  # Ridge regularization for VAR(1) fit
+  ridge_alpha: 0.001
+
+  # Minimum eigenvalue magnitude to include
+  mag_min: 0.01
+
+  # Number of eigenvalue pairs to average
+  n_pairs: 1
+
+# =============================================================================
+# Group Statistics
+# =============================================================================
+
+group_stats:
+  # Number of permutations for spin test
+  n_permutations: 1000
+
+  # Correlation method: spearman | pearson
+  corr_method: spearman
+
+  # Fall back to non-spatial permutation if spin test fails
+  spin_fallback_to_perm: true
+
+  # Coordinate axes (fsaverage surface space, RAS orientation)
+  # x = ML (medial-lateral): negative=left, positive=right
+  # y = AP (anterior-posterior): negative=posterior, positive=anterior
+  # z = DV (dorsal-ventral): negative=inferior, positive=superior
+  axes_mapping:
+    ML: x
+    AP: y
+    DV: z
+
+# =============================================================================
+# Batch Processing
+# =============================================================================
+
+batch:
+  # Parallelization limits (FreeSurfer is memory-intensive)
+  max_reconall_jobs: 2
+  max_bem_jobs: 4
+  max_extract_jobs: 4
+
+  # Skip subjects with existing DONE markers
+  skip_existing: true
+
+  # Stop on first failure vs. continue processing
+  fail_fast: false
+
+# =============================================================================
+# Quality Control
+# =============================================================================
+
+qc:
+  save_plots: true
+  plot_format: png
+  plot_dpi: 150
