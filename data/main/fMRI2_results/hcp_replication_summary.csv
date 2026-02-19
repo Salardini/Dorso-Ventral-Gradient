@@ -1,0 +1,2 @@
+n_subjects,n_parcels_valid,rho_vs_dv_r,rho_vs_dv_p_param,rho_vs_dv_p_spin,rho_vs_ap_r,rho_vs_ap_p,split_half_r,mean_timepoints
+1096,400,0.0003499588913128092,0.994432985899386,0.9949,0.17589842919605805,0.0004084612155258716,0.7905908931920983,4588.010948905109

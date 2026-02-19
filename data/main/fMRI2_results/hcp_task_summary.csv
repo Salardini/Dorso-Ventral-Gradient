@@ -1,0 +1,2 @@
+data_type,bandpass,n_subjects,rho_vs_dv_r,rho_vs_dv_p_spin,rho_vs_ap_r,rho_range,split_half_r
+task,0.009-0.25 Hz,1093,-0.12420877751498141,0.0139,0.11187488520981438,0.385-0.487,0.9993151159183578
