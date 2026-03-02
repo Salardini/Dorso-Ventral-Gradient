@@ -29,6 +29,10 @@ antropy>=0.1.4
 # Configuration
 pyyaml>=6.0
 
+# Revision-specific
+abagen>=0.1.0
+enigmatoolbox>=2.0.0
+
 # Development (optional)
 pytest>=7.0.0
 black>=22.0.0
